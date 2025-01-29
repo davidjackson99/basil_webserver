@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Condition Details</title>
+    <style>
+    body {
+        font-family: 'Arial', sans-serif; /* Consistent font */
+        padding: 20px; /* Adds padding around the content */
+        background-color: #f4f4f4; /* Sets a light gray background color for the page */
+    }
+
+    .table-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 400px; /* Allows for vertical scrolling */
+        border: 1px solid #ccc; /* Lighter border color */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Adds subtle shadow to the table container */
+        background-color: #fff; /* Sets a white background for the table container */
+    }
+
+    table {
+        width: 90%; /* Controls the table width */
+        margin: 0 auto; /* Centers the table */
+        border-collapse: collapse;
+        white-space: nowrap;
+    }
+
+    th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #4CAF50; /* Blue header background */
+        color: #ffffff; /* White text color for headers */
+        font-size: 16px; /* Larger font size for headers */
+    }
+
+    tr:nth-child(odd) {
+        background-color: #f9f9f9; /* Light gray for odd rows */
+    }
+
+    tr:nth-child(even) {
+        background-color: #ffffff; /* White for even rows */
+    }
+
+    a {
+        color: #007BFF; /* Blue color for links, maintaining consistency */
+        text-decoration: none; /* No underline by default */
+    }
+
+    a:hover {
+        text-decoration: underline; /* Underline on hover for better visibility */
+    }
+    .back-link {
+        position: absolute;
+        top: 15px;
+        left: 50px;
+        font-size: 14px;
+        text-decoration: none;
+        color: #ffffff;
+    }
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    .top-bar {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+</style>
+</head>
+<body>
+    <div class="top-bar">BASIL DB 🌿</div>
+    <a href="index.html" class="back-link">Back to search</a>
+    <h1 id="conditionTitle">Condition Details</h1>
+    <div id="conditionInfo">
+        <p><strong>UMLS Code:</strong> <span id="umlsCode"></span></p>
+        <p><strong>Semantic Types:</strong> <span id="semTypes"></span></p>
+        <p><strong>Number of associated trials:</strong> <span id="paperCount"></span></p>
+    </div>
+    <div class="table-container">
+        <table id="conditionTable">
+            <thead>
+                <tr>
+                    <th>PMID</th>
+                    <th>Bioactive</th>
+                    <th>Effect Source</th>
+                    <th>Health Effects</th>
+                    <th>Population</th>
+                    <th>Participants</th>
+                    <th>Study Bias</th>
+                </tr>
+            </thead>
+            <tbody id="conditionDetails"></tbody>
+        </table>
+    </div>
+
+    <h2>Related Compounds</h2>
+    <div class="table-container">
+    <table id="relatedcompoundsTable">
+        <thead>
+            <tr>
+                <th>Compound</th>
+                <th>Weight</th>
+            </tr>
+        </thead>
+        <tbody id="foodDetails"></tbody>
+    </table>
+</div>
+
+    <script>
+    function displayConditionDetails() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const condition = urlParams.get('condition');
+
+        document.title = condition + " Details"; // Sets the browser tab title
+        document.getElementById('conditionTitle').textContent = "Condition 🏥: " + condition;
+
+        fetch('data/bioactives_single_condition_filtered_final.json')
+            .then(response => response.json())
+            .then(data => {
+                const conditionData = data.filter(item => item.Condition === condition);
+                if (conditionData.length > 0) {
+                    const firstEntry = conditionData[0]; // Assuming all entries have the same UMLS Code and SemTypes
+                    document.getElementById('umlsCode').textContent = firstEntry['UMLS Code'] || 'N/A';
+                    document.getElementById('semTypes').textContent = firstEntry['SemTypes'] || 'N/A';
+                    document.getElementById('paperCount').textContent = conditionData.length;
+                }
+                populateTable(conditionData);
+            })
+            .catch(error => console.error('Error loading the data:', error));
+    }
+
+    function populateTable(data) {
+        const tableBody = document.getElementById('conditionDetails');
+        if (data.length > 0) {
+            data.forEach(item => {
+                const row = tableBody.insertRow();
+                const pmidCell = row.insertCell(0);
+                // Create a clickable link for the PMID
+                const pmidLink = document.createElement('a');
+                pmidLink.href = `https://pubmed.ncbi.nlm.nih.gov/${item.PMID}`;
+                pmidLink.textContent = item.PMID;
+                pmidLink.target = "_blank";  // Open in a new tab
+                pmidCell.appendChild(pmidLink);
+
+                const link = document.createElement('a');
+                const cell = row.insertCell();
+                link.href = `details.html?bioactive=${encodeURIComponent(item.Bioactive)}`;  // Assuming 'compound_details.html' handles this
+                link.textContent = item.Bioactive;  // Display the compound name
+                link.style.textDecoration = "none";  // Optional style
+                cell.appendChild(link);
+                row.insertCell(2).textContent = item['Effect Source'];
+                row.insertCell(3).textContent = item['Health Effects'];
+                row.insertCell(4).textContent = item.Population;
+                row.insertCell(5).textContent = item.population || 'N/A';
+                row.insertCell(6).textContent = item.bias.toFixed(3);
+            });
+        } else {
+            const row = tableBody.insertRow();
+            const cell = row.insertCell(0);
+            cell.textContent = 'No details found for this condition.';
+            cell.colSpan = 6;
+        }
+    }
+
+    window.onload = displayConditionDetails;
+</script>
+<script>
+    function populateRelatedCompounds(condition) {
+        fetch('data/weights_v1.json')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('foodDetails');
+                const relatedData = data
+                    .filter(item => item.Condition === condition)
+                    .map(item => ({
+                        ...item,
+                        // Parse and round weight to 3 decimals, ensuring it's a number
+                        Weight: item.Weight ? parseFloat(item.Weight).toFixed(3) : 'N/A'
+                    }))
+                    .sort((a, b) => parseFloat(b.Weight) - parseFloat(a.Weight)); // Sort descending by weight
+
+                if (relatedData.length > 0) {
+                    relatedData.forEach(item => {
+                        const row = tableBody.insertRow();
+
+                        // Create the cell for the bioactive name
+                        const bioactiveCell = row.insertCell(0);
+
+                        // Create a hyperlink that points to the bioactive details page
+                        const link = document.createElement('a');
+                        link.href = `details.html?bioactive=${encodeURIComponent(item.Bioactive)}`;
+                        link.textContent = item.Bioactive || 'N/A';
+                        link.style.textDecoration = "none"; // Optional: style for the link
+
+                        // Append the link to the cell
+                        bioactiveCell.appendChild(link);
+
+                        // Set up the second cell for the weight
+                        row.insertCell(1).textContent = item.Weight || 'N/A';
+                    });
+                } else {
+                    const row = tableBody.insertRow();
+                    const cell = row.insertCell(0);
+                    cell.textContent = 'No related compounds found for this condition.';
+                    cell.colSpan = 2;
+                }
+            })
+            .catch(error => console.error('Error loading related compounds:', error));
+    }
+
+    // Update window.onload to include populating related compounds
+    window.onload = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const condition = urlParams.get('condition');
+
+        displayConditionDetails();
+        populateRelatedCompounds(condition);
+    };
+</script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Compound to Condition Graph</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            padding: 0;
+            overflow-x: hidden;
+            place-items: center;
+        }
+        .node circle {
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+        .node text {
+            font: 12px sans-serif;
+            pointer-events: none;
+        }
+        .link {
+            fill: none;
+            stroke: #7e7e7e;
+            stroke-width: 1.5px;
+        }
+        .compound {
+            fill: #86ff1e;
+        }
+        .condition {
+            fill: #ed2020;
+        }
+        .controls {
+            text-align: center;
+            padding: 10px;
+}
+    </style>
+</head>
+<div class="controls">
+    <select id="compoundSelection1" value="L-Theanine" onchange="updateGraph()"></select>
+    <select id="compoundSelection2" onchange="updateGraph()"></select>
+    <select id="compoundSelection3" onchange="updateGraph()"></select>
+    <!-- Weight threshold slider -->
+    <label for="weightSlider">Minimum Weight:</label>
+    <input type="range" id="weightSlider" min="3" max="50" value="3" oninput="updateGraph()">
+    <span id="sliderValue">10</span>
+</div>
+<div id="my_dataviz"></div>
+
+<script>
+
+    d3.json("data/weights_v1.json").then(function(data) {
+    // Extract unique compounds
+    let compounds = Array.from(new Set(data.map(d => d.Bioactive)));
+
+    // Populate the dropdowns
+    var selects = d3.selectAll("#compoundSelection1, #compoundSelection2, #compoundSelection3");
+    selects.selectAll("option")
+        .data(compounds)
+        .enter()
+        .append("option")
+        .text(d => d)
+        .attr("value", d => d);
+
+    // Initial graph setup
+    updateGraph();  // Call initially to load the graph when the page loads
+});
+
+function updateGraph() {
+    var selectedCompounds = [
+        document.getElementById("compoundSelection1").value,
+        document.getElementById("compoundSelection2").value,
+        document.getElementById("compoundSelection3").value
+    ].filter(d => d); // Filter out any undefined or null values
+
+    var weightThreshold = document.getElementById("weightSlider").value;
+    document.getElementById("sliderValue").textContent = weightThreshold; // Display current slider value
+
+    // Load and process the data again using the selected compounds
+    d3.json("data/weights_v1.json").then(function(data) {
+        // Clear the previous visualization
+        d3.select("#my_dataviz").select("svg").remove();
+
+        // Filter data to only include selected compounds and weights above the slider value
+        const filteredData = data.filter(d => selectedCompounds.includes(d.Bioactive) && d.Weight > weightThreshold);
+
+            // Extract nodes for compounds and conditions
+            let nodes = [], links = [];
+            const nodeMap = new Map(); // To avoid duplicate nodes
+
+            filteredData.forEach(d => {
+                if (!nodeMap.has(d.Bioactive)) {
+                    nodes.push({id: d.Bioactive, type: 'compound'});
+                    nodeMap.set(d.Bioactive, true);
+                }
+                if (!nodeMap.has(d.Condition)) {
+                    nodes.push({id: d.Condition, type: 'condition'});
+                    nodeMap.set(d.Condition, true);
+                }
+                links.push({source: d.Bioactive, target: d.Condition, weight: d.Weight});
+            });
+
+            // Set up the D3 simulation
+            var simulation = d3.forceSimulation(nodes)
+                .force("link", d3.forceLink(links).id(d => d.id).distance(10))
+                .force("charge", d3.forceManyBody().strength(-100))
+                .force("center", d3.forceCenter(window.innerWidth / 2, window.innerHeight / 2-40));
+
+            // Create SVG element
+            var svg = d3.select("#my_dataviz").append("svg")
+                .attr("width", window.innerWidth-10)
+                .attr("height", window.innerHeight-100);
+
+            // Draw links
+            var link = svg.append("g")
+                .selectAll("line")
+                .data(links)
+                .enter().append("line")
+                .attr("class", "link");
+
+            // Draw nodes
+            var node = svg.append("g")
+    .attr("class", "nodes")
+    .selectAll("g")
+    .data(nodes)
+    .enter().append("g")
+    .attr("class", d => d.type === 'compound' ? "compound" : "condition");
+
+node.append("circle")
+    .attr("r", d => d.type === 'compound' ? 10 : 5)  // Larger radius for 'compound', smaller for others
+    .attr("fill", d => d.type === 'compound' ? "lightgreen" : "red")  // Different colors for compound and condition
+    .call(d3.drag()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended));
+
+            // Append text labels to the compound nodes only
+    node.filter(d => d.type === 'compound')
+    .append("text")
+    .attr("dx", 12)  // Offset x position right from the circle
+    .attr("dy", ".35em")  // Center text vertically around the circle
+    .text(d => d.id)  // Display the compound name
+    .style("fill", "black")
+    .style("font-size", "12px")
+    .style("pointer-events", "none");  // Make sure the text does not interfere with drag behavior
+
+// Simulation's "tick" event to update node and link positions
+simulation.on("tick", () => {
+    node.attr("transform", function(d) {
+        return "translate(" + d.x + "," + d.y + ")";
+    });
+
+    link.attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+});
+
+            function dragstarted(d) {
+                if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(d) {
+                d.fx = d3.event.x;
+                d.fy = d3.event.y;
+            }
+
+            function dragended(d) {
+                if (!d3.event.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            }
+        });
+    }
+updateGraph();
+</script>
+</body>
+</html>

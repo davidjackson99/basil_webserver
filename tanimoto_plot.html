@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MDS Visualization</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <style>
+        svg {
+            width: 90vh; /* Set the width to 80% of the viewport height */
+            height: 90vh; /* Make the plot square by setting equal height and width */
+        }
+        .tooltip {
+        position: absolute;
+        text-align: center;
+        padding: 6px;
+        font: 12px sans-serif;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        pointer-events: none;
+        opacity: 0;
+    }
+        text.title {
+            font-family: 'Arial', sans-serif;
+            font-size: 22px;
+            text-anchor: middle; /* Center the text (horizontally) */
+        }
+        input {
+            font-size: 14px;
+            padding: 8px;
+            text-anchor: middle;
+            margin-left: 240px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" id="searchBar" placeholder="Search for a compound..." />
+    <svg></svg>
+
+    <div class="tooltip"></div>
+    <script>
+        // Fetch the JSON data
+        d3.json("data/bioactive_tanimoto.json").then(function(data) {
+            const svg = d3.select("svg");
+            const size = parseInt(svg.style("width")); // Use width or height since they are the same
+            const margin = 40; // Adjust margins for aesthetics
+
+            // Create scales for X and Y
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(data, d => d.x))
+                .range([margin, size - margin]);
+
+            const yScale = d3.scaleLinear()
+                .domain(d3.extent(data, d => d.y))
+                .range([size - margin, margin]);
+
+            // Create a color scale
+            const colorScale = d3.scaleSequential(d3.interpolateViridis)
+                .domain(d3.extent(data, d => d.x)); // Color based on the x-coordinate
+
+            // Add a title to the SVG
+            svg.append("text")
+                .attr("class", "title")
+                .attr("x", size / 2) // Position at half width
+                .attr("y", margin / 2) // Position a bit down from the top edge
+                .text("Compound Similarities (Chemical Structure)");
+
+            // Add circles for each compound
+            const circles = svg.selectAll("circle")
+                .data(data)
+                .enter()
+                .append("circle")
+                .attr("cx", d => xScale(d.x))
+                .attr("cy", d => yScale(d.y))
+                .attr("r", 5)
+                .attr("fill", d => colorScale(d.x)); // Use color scale for fill
+
+            circles.on("mouseover", function(event, d) {
+                    d3.select(this).transition().attr("r", 15); // Increase the radius on hover
+                    d3.select(".tooltip")
+                        .style("opacity", 1)
+                        .html("Compound: " + d.compound + "<br/>X: " + d.x.toFixed(2) + "<br/>Y: " + d.y.toFixed(2))
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 15) + "px");
+                })
+                .on("mouseout", function() {
+                    d3.select(this).transition().attr("r", 5); // Reset the radius
+                    d3.select(".tooltip").style("opacity", 0);
+                });
+            // Search functionality
+            document.getElementById('searchBar').onkeyup = function() {
+                const searchTerm = this.value.toLowerCase();
+                circles.style("stroke", null).style("stroke-width", null); // Reset
+                if (searchTerm) {
+                    circles.filter(function(d) {
+                        return d.compound.toLowerCase().indexOf(searchTerm) > -1;
+                    })
+                    .style("stroke", "red")
+                    .style("stroke-width", "2px"); // Highlight matching compounds
+                }
+            };
+        });
+    </script>
+</body>
+</html>

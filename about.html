@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>About BASIL DB 🌿</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        .top-bar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .header {
+            position: fixed;
+            top:10px; /* Increase this value if the buttons still overlap the top bar */
+            right: 0;
+            left: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+        h1.page-title {
+            text-align: center;
+            text-decoration: underline;
+            margin-top: 70px; /* Adjust this value to position the title correctly */
+        }
+        .info-button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            color: #000000;
+            border: none;
+            font-size: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .content {
+            background-color: white;
+            padding: 20px;
+            margin-top: 10px; /* Increased to push content below the header */
+        }
+        .section {
+            background-color: #c2eda9; /* White background for sections */
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px; /* Optional: adds rounded corners for a softer look */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Optional: adds subtle shadow for depth */
+        }
+        .footer {
+    text-align: center;
+    margin-top: 1px;
+    display: flex;             /* Use flexbox to manage layout */
+    justify-content: center;   /* Center the content horizontally */
+    align-items: center;       /* Align items vertically in the center */
+    flex-wrap: wrap;           /* Allows items to wrap if not enough space */
+}
+
+img {
+    width: 150px;
+    margin: 20px;
+    vertical-align: middle;    /* Align the images vertically in the middle */
+}
+    </style>
+</head>
+<body>
+<div class="top-bar">BASIL DB 🌿</div>
+    <div class="header">
+        <button class="info-button" onclick="window.location.href='index.html'">🔎</button>
+        <button class="info-button" onclick="window.location.href='info.html'">🏠</button>
+    </div>
+    <h1 class="page-title">About BASIL DB 🌿</h1>
+
+    <div class="content">
+        <div class="section">
+            <h1>Overview</h1>
+            <p>The intricate relationship between bioactive compounds and health outcomes necessitates a robust framework for scientific exploration and hypothesis generation. This project introduces a comprehensive database, BASIL (Bioactive Analysis for Systematic Insights and Longevity), designed to aggregate and analyze data on various bioactives derived from natural sources and their associated health effects. </p>
+            <p>Utilizing advanced natural language processing techniques, we have systematically reviewed and extracted data from a multitude of sources, including PubMed clinical trials, FooDB, Phenol-Explorer, and ChEMBL. The database not only catalogues bioactive substances and their health impacts but also contextualizes the strength of evidence supporting each association. Through the employment of various data visualization techniques such as network graphs and heatmaps, we provide an accessible platform for researchers to discern patterns and research trends. </p>
+            <p>Our analysis reveals significant insights into the most potent bioactives, identifies research gaps, and supports the scientific community in developing targeted nutritional interventions and therapies. This paper discusses the methodologies employed in data collection, the challenges of data heterogeneity, and the potential implications of our findings in the broader context of nutritional science and therapeutic development.</p>
+        </div>
+        <div class="section">
+            <h1>Contributors</h1>
+            <p>The BASIL project was initiated and developed by a team of researchers from the University of Amsterdam, specifically within the INtelligent Data Engineering Lab (INDELab). Key contributors to this project are:</p>
+            <ul>
+                <li>David Jackson - PhD Student at INDELab </li>
+                <li>Prof. Dr. Paul Groth - Full Professor at INDELab</li>
+                <li>Dr. Hazar Harmouch - Assistant Professor at INDELab</li>
+            </ul>
+        </div>
+        <div class="section">
+            <h1>Methodology</h1>
+            <p>Our methodology involved systematic data aggregation from sources like PubMed, FooDB, Phenol-Explorer, and ChEMBL. The data was processed using advanced natural language processing techniques to ensure accurate extraction and analysis of information regarding bioactive compounds and their health effects.</p>
+        </div>
+        <div class="section">
+            <h1>Disclaimers</h1>
+            <p>Please note that the data included in the BASIL database is for educational and research use only. Great care has been taken in preparing the information, but the nature of scientific data is such that revisions and updates are continually needed. The BASIL team includes data scientists, not medical or health professionals. We are committed to continuous development of the database and making efforts to enhance the quality and accuracy of the information on a step-by-step basis.</p>
+        </div>
+        <div class="section">
+            <h1>Citations</h1>
+            <p>If you use data or visualizations from BASIL in your research, please cite:</p>
+            <pre>
+BASIL: Bioactive Analysis for Systematic Insights and Longevity. (Placeholder)
+            </pre>
+        </div>
+        <div class="section">
+            <h1>Funding and Acknowledgments</h1>
+            <p>This research did not receive any specific grant from funding agencies in the public, commercial, or not-for-profit sectors. I would like to thank the University of Amsterdam for the use of their facilities and appreciate the assistance of Prof. Paul Groth and Dr. Hazar Harmouch in the completion of this project.</p>
+        </div>
+        <div class="section">
+            <h1>Contact Information</h1>
+            <p>For further inquiries or support, please get in touch with us at d.i.jackson@uva.nl or follow us on <a href="https://indelab.org">indelab.org</a>.</p>
+        </div>
+    </div>
+    <div class="footer">
+        <img src="images/university-of-amsterdam-2.png" alt="Logo 1">
+        <img src="images/INDELab_Logo_BlackRedD.png" alt="Logo 2">
+    </div>
+</body>
+</html>

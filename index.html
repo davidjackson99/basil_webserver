@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search BASIL DB 🌿</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .top-bar {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">BASIL DB 🌿</div>
+    <div class="header">
+        <button class="info-button" onclick="window.location.href='about.html'">📗</button>
+        <button class="info-button" onclick="window.location.href='info.html'">🏠</button>
+    </div>
+    <div class="search-container">
+        <h1> <u> Search BASIL 🔎 </u></h1>
+        <select id="searchType">
+            <option value="bioactive">Bioactive</option>
+            <option value="condition">Condition</option>
+            <option value="food">Foods</option>
+            <option value="other">Other</option>
+        </select>
+        <input type="text" id="searchInput" placeholder="Enter search query">
+        <div id="autocomplete-list" class="autocomplete-items"></div>
+        <button onclick="handleSearch()">Search</button>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

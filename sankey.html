@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Sankey Diagram with Conditions</title>
+<script src="https://d3js.org/d3.v6.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<style>
+    #sankey svg {
+        width: 100%;
+        height: 550px;
+    }
+    .node rect {
+        stroke: #fff;
+        stroke-width: 2px;
+        cursor: move;
+    }
+    .node text {
+        fill: #000;
+        font: 12px sans-serif;
+    }
+    .link {
+        fill: none;
+        stroke: #1375e6;
+        stroke-opacity: 0.3;
+    }
+    .link:hover {
+        stroke-opacity: 0.6;
+    }
+    select, #condition-slider {
+        margin: 10px;
+    }
+</style>
+</head>
+<body>
+
+<select id="food1-select"></select>
+<select id="food2-select"></select>
+<input id="condition-slider" type="range" min="1" max="8" value="3" step="1">
+<label for="condition-slider">Max Conditions: <span id="condition-value">5</span></label>
+
+<div id="sankey"></div>
+<script>
+    var conditionColorScale = d3.scaleOrdinal(d3.schemeCategory10);
+    function getTopConditions(conditions, maxConditions) {
+        const compoundConditions = conditions.reduce((acc, condition) => {
+            if (!acc[condition.Bioactive]) {
+                acc[condition.Bioactive] = [];
+            }
+            acc[condition.Bioactive].push(condition);
+            return acc;
+        }, {});
+
+        Object.keys(compoundConditions).forEach(compound => {
+            compoundConditions[compound].sort((a, b) => b.Weight - a.Weight);
+            compoundConditions[compound] = compoundConditions[compound].slice(0, maxConditions);
+        });
+
+        return Object.values(compoundConditions).flat();
+    }
+
+    Promise.all([
+        d3.json("./sankey/sankey_contents.json"),
+        d3.json("./sankey/sankey_weights.json")
+    ]).then(function([foodData, conditionData]) {
+        var foodNames = [...new Set(foodData.map(d => d.food_name))];
+        var slider = document.getElementById('condition-slider');
+        var conditionValueLabel = document.getElementById('condition-value');
+        var conditions = conditionData.filter(d => d.Weight > 15);
+
+        var food1Select = d3.select("#food1-select");
+        var food2Select = d3.select("#food2-select");
+
+        food1Select.selectAll("option")
+            .data(foodNames)
+            .enter()
+            .append("option")
+            .text(d => d);
+
+        food2Select.selectAll("option")
+            .data(foodNames)
+            .enter()
+            .append("option")
+            .text(d => d);
+
+        function updateSankey() {
+            var food1Name = food1Select.node().value;
+            var food2Name = food2Select.node().value;
+            var maxConditions = slider.value;
+            conditionValueLabel.textContent = maxConditions;
+            createSankey(food1Name, food2Name, maxConditions);
+        }
+
+        function createSankey(food1Name, food2Name, maxConditions) {
+            var nodes = [], links = [];
+            var nodeId = new Map();
+
+            function processFoodData(foodName) {
+        var filteredData = foodData.filter(d => d.food_name === foodName);
+        var foodNodeId = getNodeId(foodName, "Food");
+        filteredData.forEach(item => {
+            var bioactiveNodeId = getNodeId(item.Bioactive, "Compound");
+            links.push({source: foodNodeId, target: bioactiveNodeId, value: 100}); // Assuming link value is constant for illustration
+            getTopConditions(conditions.filter(c => c.Bioactive === item.Bioactive), maxConditions).forEach(cond => {
+                var conditionNodeId = getNodeId(cond.Condition, "Condition");
+                links.push({source: bioactiveNodeId, target: conditionNodeId, value: cond.Weight});
+            });
+        });
+    }
+
+            function getNodeId(name, type) {
+        if (!nodeId.has(name)) {
+            nodeId.set(name, nodeId.size);
+            nodes.push({id: nodeId.get(name), name: name, type: type});
+        }
+        return nodeId.get(name);
+    }
+
+            processFoodData(food1Name);
+            processFoodData(food2Name);
+
+            var sankeyData = {nodes, links};
+
+            var svg = d3.select("#sankey").html("").append("svg")
+                .attr("width", "960")
+                .attr("height", "500");
+
+            var sankey = d3.sankey()
+                .nodeWidth(30) // Increased node width
+                .nodePadding(40)
+                .extent([[1, 5], [960 - 1, 500 - 5]])
+                .size([960, 500])
+                .extent([[1, 20], [960 - 1, 500 - 5]]);
+
+            var {nodes, links} = sankey(sankeyData);
+
+            svg.append("g")
+                .selectAll("rect")
+                .data(nodes)
+                .enter().append("rect")
+                    .attr("x", d => d.x0)
+                    .attr("y", d => d.y0)
+                    .attr("height", d => d.y1 - d.y0)
+                    .attr("width", sankey.nodeWidth())
+                    .attr("fill", d => {
+                switch (d.type) {
+                    case "Food": return "#ffd301"; // Yellow
+                    case "Compound": return "#1437c5"; // Blue
+                    case "Condition": return "#7320d5"; // Purple
+                    default: return "#666666"; // Fallback color
+                }
+            })
+                .append("title")
+                    .text(d => d.name);
+
+            svg.append("g")
+                .attr("fill", "none")
+                .selectAll("path")
+                .data(links)
+                .enter().append("path")
+                .attr("d", d3.sankeyLinkHorizontal())
+                .attr("class", "link") // Apply the CSS class to each path
+                .style("stroke-width", d => Math.max(1, d.width)) // Use style method
+                .style("stroke", d => conditionColorScale(d.target.type)) // Dynamically set the color using style
+                .style("stroke-opacity", 0.5); // You can control opacity here as well
+
+
+            svg.append("g")
+                .style("font", "12px sans-serif")
+                .selectAll("text")
+                .data(nodes)
+                .enter().append("text")
+                    .attr("x", d => d.x0 - 6)
+                    .attr("y", d => (d.y0 + d.y1) / 2)
+                    .attr("dy", "0.35em")
+                    .attr("text-anchor", "end")
+                    .text(d => d.name)
+                    .filter(d => d.x0 < 480)
+                    .attr("x", d => d.x1 + 6)
+                    .attr("text-anchor", "start");
+        }
+
+        food1Select.on("change", updateSankey);
+        food2Select.on("change", updateSankey);
+        slider.oninput = updateSankey;
+
+        updateSankey();
+    });
+</script>
+</body>
+</html>

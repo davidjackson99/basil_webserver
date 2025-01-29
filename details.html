@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bioactive Details</title>
+    <style>
+    body {
+        font-family: 'Arial', sans-serif; /* Changes the font */
+        padding: 20px; /* Adds padding around the content */
+        background-color: #f4f4f4; /* Sets a light gray background color for the page */
+    }
+
+    .table-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: 300px; /* Slightly smaller than before for better fit */
+        border: 1px solid #ccc; /* Lighter border color */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Adds subtle shadow to the table container */
+        background-color: #fff; /* Sets a white background for the table container */
+        margin-bottom: 20px; /* Adds space below the container */
+    }
+
+    table {
+        width: 90%; /* Makes the table slightly smaller */
+        margin: 0 auto; /* Centers the table horizontally */
+        border-collapse: collapse;
+        white-space: nowrap;
+    }
+
+    th, td {
+        padding: 10px 15px; /* Adjusts padding for spacing */
+        text-align: left;
+    }
+
+    th {
+        background-color: #4CAF50; /* Blue header background */
+        color: #ffffff; /* White text color for headers */
+        font-size: 16px; /* Larger font size for headers */
+    }
+
+    tr:nth-child(odd) {
+        background-color: #f9f9f9; /* Light gray for odd rows */
+    }
+
+    tr:nth-child(even) {
+        background-color: #ffffff; /* White for even rows */
+    }
+
+    a {
+        color: #007BFF; /* Blue color for links */
+        text-decoration: none; /* Removes underline from links */
+    }
+
+    a:hover {
+        text-decoration: underline; /* Adds underline on hover for better link visibility */
+    }
+    .back-link {
+        position: absolute;
+        top: 15px;
+        left: 50px;
+        font-size: 14px;
+        text-decoration: none;
+        color: #ffffff;
+    }
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    .top-bar {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+</style>
+</head>
+<body>
+    <div class="top-bar">BASIL DB 🌿</div>
+    <a href="index.html" class="back-link">Back to search</a>
+    <h1 id="bioactiveTitle">Bioactive Details</h1>
+    <div id="bioactiveInfo">
+    <p><strong>Number of associated trials:</strong> <span id="paperCount"></span></p>
+    </div>
+    <h2>Research Details</h2>
+    <div class="table-container">
+        <table id="bioactiveTable">
+            <thead>
+                <tr>
+                    <th>PMID</th>
+                    <th>Health Effects</th>
+                    <th>Effect Source</th>
+                    <th>Population</th>
+                    <th>Other Compounds</th>
+                    <th>Participants</th>
+                    <th>Study Bias</th>
+                </tr>
+            </thead>
+            <tbody id="bioactiveDetails"></tbody>
+        </table>
+    </div>
+
+    <h2>Foods Containing This Bioactive</h2>
+    <div class="table-container">
+    <table id="foodTable">
+        <thead>
+            <tr>
+                <th>Food Name</th>
+                <th>Amount</th>
+                <th>Unit</th>
+            </tr>
+        </thead>
+        <tbody id="foodDetails"></tbody>
+    </table>
+</div>
+
+    <script>
+        function getBioactiveData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const bioactive = urlParams.get('bioactive');
+
+            document.title = bioactive + " Details"; // Sets the browser tab title
+            document.getElementById('bioactiveTitle').textContent = "Bioactive 🌿: " + bioactive; // Set the title to the searched bioactive
+
+            fetch('data/bioactive_data.json')
+                .then(response => response.json())
+                .then(data => {
+                    displayBioactiveDetails(data, bioactive);
+                    const bioactiveData = data.filter(item => item.Bioactive === bioactive);
+                    if (bioactiveData.length > 0) {
+                        document.getElementById('paperCount').textContent = bioactiveData.length; // Display the count of papers
+                        // You can dynamically set a description here if it comes from the data
+                        // document.getElementById('bioactiveDescription').textContent = bioactiveData[0].Description || 'TBC';
+                    }
+                })
+                .catch(error => console.error('Error loading the data:', error));
+
+            fetch('data/data_merged.json')
+                .then(response => response.json())
+                .then(data => {
+                    displayFoodDetails(data, bioactive);
+                })
+                .catch(error => console.error('Error loading the data:', error));
+        }
+
+        function displayBioactiveDetails(data, bioactive) {
+            const detailsBody = document.getElementById('bioactiveDetails');
+            const bioactiveData = data.filter(item => item.Bioactive === bioactive);
+            if (bioactiveData.length > 0) {
+                bioactiveData.forEach(item => {
+                    const row = detailsBody.insertRow();
+                    const pmidCell = row.insertCell(0);
+                    // Create a clickable link for the PMID
+                    const pmidLink = document.createElement('a');
+                    pmidLink.href = `https://pubmed.ncbi.nlm.nih.gov/${item.PMID}`;
+                    pmidLink.textContent = item.PMID;
+                    pmidLink.target = "_blank";  // Open in a new tab
+                    pmidCell.appendChild(pmidLink);
+                    row.insertCell(1).textContent = item['Health Effects'];
+                    row.insertCell(2).textContent = item['Effect Source'];
+                    row.insertCell(3).textContent = item.Population;
+                    row.insertCell(4).textContent = item['Other Compounds'];
+                    row.insertCell(5).textContent = item.population ? item.population.toString() : 'N/A'; // Handle null
+                    row.insertCell(6).textContent = item.bias.toFixed(3); // Format floating-point precision
+                });
+            } else {
+                const row = detailsBody.insertRow();
+                row.insertCell(0).textContent = 'No details found for this bioactive.';
+                row.cells[0].colSpan = 8;
+            }
+        }
+
+        function displayFoodDetails(data, bioactive) {
+    const detailsBody = document.getElementById('foodDetails');
+    const foodData = data.filter(item => item.Bioactive === bioactive);
+    if (foodData.length > 0) {
+        foodData.forEach(item => {
+            const row = detailsBody.insertRow();
+            const cell = row.insertCell();
+
+            // Create a link to food_details.html with the food name as a query parameter
+            const link = document.createElement('a');
+            link.href = `food_details.html?food=${encodeURIComponent(item.food_name)}`;
+            link.textContent = item.food_name;  // Assuming 'Food' is the column for food names
+
+            cell.appendChild(link);
+            const content = item.orig_content === null ? 'N/A' : item.orig_content;
+            const unit = item.orig_unit === null ? 'N/A' : item.orig_unit;
+            row.insertCell(1).textContent = content.toFixed(3);
+            row.insertCell(2).textContent = unit;
+        });
+    } else {
+        const row = detailsBody.insertRow();
+        row.insertCell(0).textContent = 'No foods listed for this bioactive.';
+        row.cells[0].colSpan = 4;
+    }
+}
+
+        window.onload = getBioactiveData;
+    </script>
+</body>
+</html>

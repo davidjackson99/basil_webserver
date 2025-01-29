@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Food Details</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+    body {
+        font-family: 'Arial', sans-serif; /* Changes the font */
+        padding: 20px; /* Adds padding around the content */
+        background-color: #f4f4f4; /* Sets a light gray background color for the page */
+    }
+
+    .table-container {
+        overflow-x: auto;
+        overflow-y: auto;
+        margin: 0 auto;
+        max-height: 300px; /* Slightly smaller than before for better fit */
+        border: 1px solid #ccc; /* Lighter border color */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Adds subtle shadow to the table container */
+        background-color: #fff; /* Sets a white background for the table container */
+        margin-bottom: 20px; /* Adds space below the container */
+    }
+
+    table {
+        width: 90%; /* Makes the table slightly smaller */
+        margin: 0 auto; /* Centers the table horizontally */
+        border-collapse: collapse;
+        white-space: nowrap;
+    }
+
+    th, td {
+        padding: 10px 15px; /* Adjusts padding for spacing */
+        text-align: left;
+    }
+
+    th {
+        background-color: #4CAF50; /* Blue header background */
+        color: #ffffff; /* White text color for headers */
+        font-size: 16px; /* Larger font size for headers */
+    }
+
+    tr:nth-child(odd) {
+        background-color: #f9f9f9; /* Light gray for odd rows */
+    }
+
+    tr:nth-child(even) {
+        background-color: #ffffff; /* White for even rows */
+    }
+
+    a {
+        color: #007BFF; /* Blue color for links */
+        text-decoration: none; /* Removes underline from links */
+    }
+
+    a:hover {
+        text-decoration: underline; /* Adds underline on hover for better link visibility */
+    }
+    .back-link {
+        position: absolute;
+        top: 15px;
+        left: 50px;
+        font-size: 14px;
+        text-decoration: none;
+        color: #ffffff;
+    }
+    .back-link:hover {
+        text-decoration: underline;
+    }
+    .top-bar {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+</style>
+</head>
+<body>
+    <div class="top-bar">BASIL DB 🌿</div>
+    <a href="index.html" class="back-link">Back to search</a>
+    <h1 id="foodTitle">Food Details</h1>
+    <div id="foodInfo">
+    <h2>Bioactives contained in this Food</h2>
+    <div class="table-container">
+    <table id="foodTable">
+        <thead>
+            <tr>
+                <th>Compound</th>
+                <th>Amount</th>
+                <th>Unit</th>
+            </tr>
+        </thead>
+        <tbody id="foodDetails"></tbody>
+    </table>
+</div>
+
+    <script>
+        function getBioactiveData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const food = urlParams.get('food');
+
+            document.title = food + " Details"; // Sets the browser tab title
+            document.getElementById('foodTitle').textContent = "Food 🍽️: " + food; // Set the title to the searched food
+
+            fetch('data_merged.json')
+                .then(response => response.json())
+                .then(data => {
+                    displayBioactiveDetails(data, food);
+                    const foodData = data.filter(item => item.food_name === food);
+                    if (foodData.length > 0) {
+                        document.getElementById('paperCount').textContent = foodData.length; // Display the count of papers
+                        // You can dynamically set a description here if it comes from the data
+                        // document.getElementById('foodDescription').textContent = foodData[0].Description || 'TBC';
+                    }
+                })
+                .catch(error => console.error('Error loading the data:', error));
+
+            fetch('data_merged.json')
+                .then(response => response.json())
+                .then(data => {
+                    displayFoodDetails(data, food);
+                })
+                .catch(error => console.error('Error loading the data:', error));
+        }
+
+        function displayFoodDetails(data, food) {
+    const detailsBody = document.getElementById('foodDetails');
+    const foodData = data.filter(item => item.food_name === food);
+
+    // Sorting and getting top 10 compounds
+    foodData.sort((a, b) => (b.orig_content || 0) - (a.orig_content || 0));
+    const topCompounds = foodData.slice(0, 10);
+
+    if (topCompounds.length > 0) {
+        topCompounds.forEach(item => {
+            const row = detailsBody.insertRow();
+            row.insertCell(0).textContent = Bioactive;
+            row.insertCell(1).textContent = content;
+            row.insertCell(2).textContent = unit;
+        });
+
+    } else {
+        const row = detailsBody.insertRow();
+        row.insertCell(0).textContent = 'No compounds listed for this food.';
+        row.cells[0].colSpan = 3;
+    }
+    createBubbleChart(topCompounds);
+}
+
+function buildGlobalFrequencyMap(data) {
+    return data.reduce((acc, item) => {
+        acc[item.Bioactive] = (acc[item.Bioactive] || 0) + 1;
+        return acc;
+    }, {});
+}
+
+function displayFoodDetails(foodData) {
+    const detailsBody = document.getElementById('foodDetails');
+    if (foodData.length > 0) {
+        foodData.forEach(item => {
+        const row = detailsBody.insertRow();
+
+        // Create the cell for the bioactive name
+        const bioactiveCell = row.insertCell(0);
+
+        // Create a hyperlink that points to the bioactive details page
+        const link = document.createElement('a');
+        link.href = `details.html?bioactive=${encodeURIComponent(item.Bioactive)}`;  // Link to bioactive details page
+        link.textContent = item.Bioactive || 'N/A';  // Display the bioactive name or 'N/A'
+        link.style.textDecoration = "none";  // Optional: style for the link
+
+        // Append the link to the cell
+        bioactiveCell.appendChild(link);
+
+        // Handle the content and unit cells
+        const content = item.orig_content === null ? 'N/A' : item.orig_content;
+        const unit = item.orig_unit === null ? 'N/A' : item.orig_unit;
+        row.insertCell(1).textContent = content;
+        row.insertCell(2).textContent = unit;
+        });
+    } else {
+        const row = detailsBody.insertRow();
+        row.insertCell(0).textContent = 'No compounds listed for this food.';
+        row.cells[0].colSpan = 3;
+    }
+}
+
+function getBioactiveData() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const food = urlParams.get('food');
+
+    document.title = food + " Details";
+    document.getElementById('foodTitle').textContent = "Food 🍽️: " + food;
+
+    Promise.all([
+        fetch('data/data_merged.json').then(res => res.json()),
+        fetch('data/weights_v1.json').then(res => res.json())
+    ]).then(([foodData, weightsData]) => {
+        const filteredFoodData = foodData.filter(item => item.food_name === food);
+        displayFoodDetails(filteredFoodData);
+        createBubbleChart(filteredFoodData, buildGlobalFrequencyMap(foodData), weightsData);
+    }).catch(error => console.error('Error loading the data:', error));
+}
+
+function createBubbleChart(foodData, frequencyMap, weightsData) {
+    const ctx = document.getElementById('bubbleChart').getContext('2d');
+    const colors = [
+        'rgba(255, 99, 132, 0.6)',
+        'rgba(54, 162, 235, 0.6)',
+        'rgba(255, 206, 86, 0.6)',
+        'rgba(75, 192, 192, 0.6)',
+        'rgba(153, 102, 255, 0.6)',
+        'rgba(255, 159, 64, 0.6)',
+        'rgba(199, 199, 199, 0.6)',
+        'rgba(83, 102, 255, 0.6)',
+        'rgba(40, 159, 64, 0.6)',
+        'rgba(255, 99, 132, 0.6)'
+    ];  // A set of 10 example colors
+
+    const conditionsByBioactive = weightsData.reduce((acc, item) => {
+        if (!acc[item.Bioactive]) acc[item.Bioactive] = [];
+        acc[item.Bioactive].push({ Condition: item.Condition, Weight: item.Weight });
+        return acc;
+    }, {});
+
+    // Ensure each list of conditions is sorted by weight and only the top 5 are kept
+    Object.keys(conditionsByBioactive).forEach(key => {
+        conditionsByBioactive[key].sort((a, b) => b.Weight - a.Weight);
+        conditionsByBioactive[key] = conditionsByBioactive[key].slice(0, 5);
+    });
+
+    const chartAreaWidth = ctx.canvas.clientWidth;
+    const bubbleSpacing = chartAreaWidth / foodData.length; // Dynamic spacing based on canvas width
+    let previousBubbleEndX = 0; // Start at the beginning of the x-axis
+
+    const bubbleData = {
+        datasets: [{
+            label: 'Compounds',
+            data: foodData.map((item, index) => {
+                const radius = Math.max(10, Math.min(100, Math.sqrt(item.orig_content || 0) * 3)); // Ensure radius is between 10 and 100
+                const xPosition = previousBubbleEndX + radius; // Start new bubble at the end of the last bubble
+                previousBubbleEndX = xPosition + radius; // Update end position for next bubble
+
+                return {
+                    x: xPosition,
+                    y: frequencyMap[item.Bioactive] || 0,
+                    r: radius,
+                    compound: item.Bioactive,
+                    conditions: conditionsByBioactive[item.Bioactive] || []
+                };
+            }),
+            backgroundColor: colors  // Use array of colors for bubbles
+        }]
+    };
+
+    new Chart(ctx, {
+        type: 'bubble',
+        data: bubbleData,
+        options: {
+            scales: {
+                x: { display: true, title: { display: true, text: 'Compound Index' } },
+                y: { type: 'logarithmic', display: true, title: { display: true, text: 'Frequency of Bioactive' }, beginAtZero: true }
+
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.data[context.dataIndex];
+                            let tooltipText = `${label.compound}`;
+                            return tooltipText;
+                        }
+                    },
+                    displayColors: true,
+                    bodyFont: { size: 16 },  // Increase font size
+                    bodySpacing: 4,  // Adds spacing between lines in the tooltip
+                    padding: 10  // Adds padding inside the tooltip box
+                }
+            },
+            onClick: function(evt, element) {
+        if (element.length > 0) {
+            const firstPoint = element[0];
+            const label = this.data.datasets[firstPoint.datasetIndex].data[firstPoint.index];
+            // Populate and display modal with conditions data
+            let modalContentText = `Top conditions for compound: ${label.compound}<br>`;
+            label.conditions.forEach(c => {
+                modalContentText += `${c.Condition} (Weight: ${c.Weight.toFixed(2)})<br>`;
+            });
+            document.getElementById('modalContent').innerHTML = modalContentText;
+            document.getElementById('infoModal').style.display = 'block';
+        }
+    }
+        }
+    });
+}
+
+
+        window.onload = getBioactiveData;
+    </script>
+</div>
+<div id="chartContainer" style="width: 60%; height: 550px; margin: auto;">
+    <canvas id="bubbleChart"></canvas>
+</div>
+<div id="infoModal" style="display:none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);">
+    <div style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 50%;">
+        <span onclick="document.getElementById('infoModal').style.display='none';" style="float:right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+        <h2>Compound Details</h2>
+        <div id="modalContent">Some content...</div>
+    </div>
+</div>
+</body>
+</html>
